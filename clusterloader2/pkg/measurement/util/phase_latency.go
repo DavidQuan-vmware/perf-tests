@@ -71,6 +71,7 @@ func (o *ObjectTransitionTimes) Get(key, phase string) (time.Time, bool) {
 	return time.Time{}, false
 }
 
+
 // Count returns number of key having given phase entry.
 func (o *ObjectTransitionTimes) Count(phase string) int {
 	o.lock.Lock()
@@ -97,11 +98,13 @@ func (o *ObjectTransitionTimes) CalculateTransitionsLatency(t map[string]Transit
 				klog.V(4).Infof("%s: failed to find %v time for %v", o.name, transition.From, key)
 				continue
 			}
+			// klog.V(2).Infof("%v: %v: %v", key, transition.From, fromPhaseTime)
 			toPhaseTime, exists := transitionTimes[transition.To]
 			if !exists {
 				klog.V(4).Infof("%s: failed to find %v time for %v", o.name, transition.To, key)
 				continue
 			}
+			// klog.V(2).Infof("%v: %v: %v", key, transition.To, toPhaseTime)
 			latencyTime := toPhaseTime.Sub(fromPhaseTime)
 			// latencyTime should be always larger than zero, however, in some cases, it might be a
 			// negative value due to the precision of timestamp can only get to the level of second,
@@ -114,6 +117,7 @@ func (o *ObjectTransitionTimes) CalculateTransitionsLatency(t map[string]Transit
 		}
 
 		sort.Sort(LatencySlice(lag))
+
 		o.printLatencies(lag, fmt.Sprintf("worst %s latencies", name), transition.Threshold)
 		lagMetric := NewLatencyMetric(lag)
 		metric[name] = &lagMetric

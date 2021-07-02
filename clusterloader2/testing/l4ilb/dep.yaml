@@ -17,6 +17,6 @@ spec:
     spec:
       containers:
       - name: {{.Name}}
-        image: nginx
+        image: harbor-repo.vmware.com/relengfortkgi/nginx:alpine
         ports:
         - containerPort: 8080

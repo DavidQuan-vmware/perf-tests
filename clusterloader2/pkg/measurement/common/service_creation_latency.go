@@ -19,9 +19,12 @@ package common
 import (
 	"fmt"
 	"time"
+	"sync"
+	"regexp"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
+
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/klog"
 
@@ -38,17 +41,27 @@ import (
 
 const (
 	serviceCreationLatencyName           = "ServiceCreationLatency"
-	serviceCreationLatencyWorkers        = 10
-	defaultServiceCreationLatencyTimeout = 10 * time.Minute
+	//serviceCreationLatencyWorkers        = 10
+	defaultServiceCreationLatencyTimeout = 60 * time.Minute
 	defaultCheckInterval                 = 10 * time.Second
 	pingBackoff                          = 1 * time.Second
-	pingChecks                           = 10
+	//pingChecks                           = 20
 
 	creatingPhase     = "creating"
 	ipAssigningPhase  = "ipAssigning"
 	reachabilityPhase = "reachability"
+	// lu added for testing
+	//getexecpodstart = "getexecpodstart"
+	//getexecpodend = "getexecpodend"
+	startCheckingPhase = "startChecking"
+	consecutiveSuccCheckStartPhase = "consecutiveSuccCheckStart"
 )
 
+
+var (
+	serviceCreationLatencyWorkers int
+	pingChecks int
+)
 func init() {
 	if err := measurement.Register(serviceCreationLatencyName, createServiceCreationLatencyMeasurement); err != nil {
 		klog.Fatalf("cant register service %v", err)
@@ -58,7 +71,7 @@ func init() {
 func createServiceCreationLatencyMeasurement() measurement.Measurement {
 	return &serviceCreationLatencyMeasurement{
 		selector:      measurementutil.NewObjectSelector(),
-		queue:         workerqueue.NewWorkerQueue(serviceCreationLatencyWorkers),
+		//queue:         workerqueue.NewWorkerQueue(serviceCreationLatencyWorkers),
 		creationTimes: measurementutil.NewObjectTransitionTimes(serviceCreationLatencyName),
 		pingCheckers:  checker.NewMap(),
 	}
@@ -73,6 +86,7 @@ type serviceCreationLatencyMeasurement struct {
 	client        clientset.Interface
 	creationTimes *measurementutil.ObjectTransitionTimes
 	pingCheckers  checker.Map
+	lock          sync.Mutex
 }
 
 // Execute executes service startup latency measurement actions.
@@ -92,12 +106,23 @@ func (s *serviceCreationLatencyMeasurement) Execute(config *measurement.Config) 
 		return nil, fmt.Errorf("enable-exec-service flag not enabled")
 	}
 
+
+
 	switch action {
 	case "start":
 		if err := s.selector.Parse(config.Params); err != nil {
 			return nil, err
 		}
 		s.waitTimeout, err = util.GetDurationOrDefault(config.Params, "waitTimeout", defaultServiceCreationLatencyTimeout)
+		if err != nil {
+			return nil, err
+		}
+		serviceCreationLatencyWorkers, err = util.GetIntOrDefault(config.Params, "parallel_checker_workers", 3) 
+		if err != nil {
+			return nil, err
+		}
+		s.queue = workerqueue.NewWorkerQueue(serviceCreationLatencyWorkers)
+		pingChecks, err = util.GetIntOrDefault(config.Params, "consecutive_succeed_checks", 3) 
 		if err != nil {
 			return nil, err
 		}
@@ -118,6 +143,8 @@ func (s *serviceCreationLatencyMeasurement) Dispose() {
 		close(s.stopCh)
 	}
 	s.queue.Stop()
+	s.lock.Lock()
+	defer s.lock.Unlock()
 	s.pingCheckers.Dispose()
 }
 
@@ -176,6 +203,23 @@ func (s *serviceCreationLatencyMeasurement) gather(identifier string) ([]measure
 			From: phaseName(creatingPhase, corev1.ServiceTypeClusterIP),
 			To:   phaseName(reachabilityPhase, corev1.ServiceTypeClusterIP),
 		},
+		// lu added for testing
+		"create_to_startchecking_clusterip": {
+			From: phaseName(creatingPhase, corev1.ServiceTypeClusterIP),
+			To:   phaseName(startCheckingPhase, corev1.ServiceTypeClusterIP),
+		},
+		"startchecking_to_consecutivestart_clusterip": {
+			From: phaseName(startCheckingPhase, corev1.ServiceTypeClusterIP),
+			To:   phaseName(consecutiveSuccCheckStartPhase, corev1.ServiceTypeClusterIP),
+		},
+		"startchecking_to_available_clusterip": {
+			From: phaseName(startCheckingPhase, corev1.ServiceTypeClusterIP),
+			To:   phaseName(reachabilityPhase, corev1.ServiceTypeClusterIP),
+		},
+		"consecutivestart_to_available_clusterip": {
+			From: phaseName(consecutiveSuccCheckStartPhase, corev1.ServiceTypeClusterIP),
+			To:   phaseName(reachabilityPhase, corev1.ServiceTypeClusterIP),
+		},
 		"create_to_available_nodeport": {
 			From: phaseName(creatingPhase, corev1.ServiceTypeNodePort),
 			To:   phaseName(reachabilityPhase, corev1.ServiceTypeNodePort),
@@ -192,6 +236,7 @@ func (s *serviceCreationLatencyMeasurement) gather(identifier string) ([]measure
 			From: phaseName(creatingPhase, corev1.ServiceTypeLoadBalancer),
 			To:   phaseName(reachabilityPhase, corev1.ServiceTypeLoadBalancer),
 		},
+
 	})
 
 	content, err := util.PrettyPrintJSON(measurementutil.LatencyMapToPerfData(serviceCreationLatency))
@@ -243,6 +288,8 @@ func (s *serviceCreationLatencyMeasurement) deleteObject(svc *corev1.Service) er
 	if err != nil {
 		return fmt.Errorf("meta key created error: %v", err)
 	}
+	s.lock.Lock()
+	defer s.lock.Unlock()
 	s.pingCheckers.DeleteAndStop(key)
 	return nil
 }
@@ -276,6 +323,8 @@ func (s *serviceCreationLatencyMeasurement) updateObject(svc *corev1.Service) er
 		stopCh:        make(chan struct{}),
 	}
 	pc.run()
+	s.lock.Lock()
+	defer s.lock.Unlock()
 	s.pingCheckers.Add(key, pc)
 
 	return nil
@@ -307,6 +356,7 @@ func (p *pingChecker) run() {
 			if _, exists := p.creationTimes.Get(key, phaseName(reachabilityPhase, p.svc.Spec.Type)); exists {
 				return
 			}
+
 			// TODO(#685): Make ping checks less communication heavy.
 			pod, err := execservice.GetPod()
 			if err != nil {
@@ -315,25 +365,41 @@ func (p *pingChecker) run() {
 				time.Sleep(pingBackoff)
 				continue
 			}
+			if _, exists := p.creationTimes.Get(key, phaseName(startCheckingPhase, p.svc.Spec.Type)); !exists {
+				p.creationTimes.Set(key, phaseName(startCheckingPhase, p.svc.Spec.Type), time.Now())
+			}
+			if success == 0 {
+				p.creationTimes.Set(key, phaseName(consecutiveSuccCheckStartPhase, p.svc.Spec.Type), time.Now())
+			}
+			cmd := ""
+			msg := ""
+			//klog.V(2).Infof(pod.Status.HostIP)
 			switch p.svc.Spec.Type {
 			case corev1.ServiceTypeClusterIP:
-				cmd := fmt.Sprintf("curl %s:%d", p.svc.Spec.ClusterIP, p.svc.Spec.Ports[0].Port)
-				_, err = execservice.RunCommand(pod, cmd)
+				cmd = fmt.Sprintf("curl -m 3 -s -S %s:%d", p.svc.Spec.ClusterIP, p.svc.Spec.Ports[0].Port)
+				msg, err = execservice.RunCommand(pod, cmd)
 			case corev1.ServiceTypeNodePort:
-				cmd := fmt.Sprintf("curl %s:%d", pod.Status.HostIP, p.svc.Spec.Ports[0].NodePort)
-				_, err = execservice.RunCommand(pod, cmd)
+				klog.V(2).Infof("%v on %v", key, pod.Name)
+				cmd = fmt.Sprintf("curl -m 3 -s -S %s:%d", pod.Status.HostIP, p.svc.Spec.Ports[0].NodePort)
+				//klog.V(2).Infof(cmd)
+				msg, err = execservice.RunCommand(pod, cmd)
 			case corev1.ServiceTypeLoadBalancer:
-				cmd := fmt.Sprintf("curl %s:%d", p.svc.Status.LoadBalancer.Ingress[0].IP, p.svc.Spec.Ports[0].Port)
+				cmd := fmt.Sprintf("curl -m 3 -s -S %s:%d", p.svc.Status.LoadBalancer.Ingress[0].IP, p.svc.Spec.Ports[0].Port)
 				_, err = execservice.RunCommand(pod, cmd)
 			}
 			if err != nil {
+				klog.V(2).Infof("cmd %v in pod %v is error: %v", cmd, pod.Name, msg)
 				success = 0
 				time.Sleep(pingBackoff)
 				continue
 			}
+			ip_reg := regexp.MustCompile(`^Server address: ([\d\.]+)\:80`)
+			ip := ip_reg.FindStringSubmatch(msg)
+			klog.V(2).Infof("%s: %s", p.svc.Spec.ClusterIP, ip[1])
 			success++
 			if success == pingChecks {
 				p.creationTimes.Set(key, phaseName(reachabilityPhase, p.svc.Spec.Type), time.Now())
+				klog.V(2).Infof("%v succeed to check", key)
 			}
 		}
 	}

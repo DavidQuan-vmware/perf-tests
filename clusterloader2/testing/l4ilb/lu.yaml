@@ -1,0 +1,150 @@
+# ASSUMPTIONS:
+# - This test is designed for 1-node cluster.
+# [luwang] hit clusterloader itself panic using this test scenario, need to debug 
+
+#Constants
+{{$POD_COUNT := DefaultParam .POD_COUNT 30}}
+{{$POD_THROUGHPUT := DefaultParam .POD_THROUGHPUT 5}}
+{{$POD_STARTUP_LATENCY_THRESHOLD := DefaultParam .POD_STARTUP_LATENCY_THRESHOLD "5s"}}
+{{$OPERATION_TIMEOUT := DefaultParam .OPERATION_TIMEOUT "15m"}}
+
+#Constants
+{{$LARGE_BACKEND_SIZE := 300}}
+{{$MEDIUM_BACKEND_SIZE := 150}}
+{{$SMALL_BACKEND_SIZE := 10}}
+{{$LARGE_BACKEND_LABEL := "ilb-large"}}
+{{$MEDIUM_BACKEND_LABEL := "ilb-medium"}}
+{{$SMALL_BACKEND_LABEL := "ilb-small"}}
+# adding a fixed value for first version of the test, rate of pod creation not a concern yet.
+{{$ilbQPS := 5}}
+{{$namespaces := 100}}
+
+#Test
+
+name: small-svc
+namespace:
+  number: {{$namespaces}}
+  
+tuningSets:
+- name: ILBConstantQPS
+  qpsLoad:
+    averageQps: {{$ilbQPS}}
+- name: UniformQPS
+  qpsLoad:
+    qps: {{$POD_THROUGHPUT}}
+  
+steps:
+- name: Start monitoring
+  measurements:
+  - Identifier: APIResponsivenessPrometheusSimple
+    Method: APIResponsivenessPrometheus
+    Params:
+      action: start
+  - Identifier: PodStartupLatency
+    Method: PodStartupLatency
+    Params:
+      action: start
+      labelSelector: group = ilb-load
+      threshold: {{$POD_STARTUP_LATENCY_THRESHOLD}}
+  - Identifier: ServiceCreationLatencySmall
+    Method: ServiceCreationLatency
+    Params:
+      action: start
+      labelSelector: size = small
+  - Identifier: WaitForRunningDeployments
+    Method: WaitForControlledPodsRunning
+    Params:
+      action: start
+      apiVersion: apps/v1
+      kind: Deployment
+      labelSelector: group = ilb-load
+      operationTimeout: 15m
+
+- name: Create deployment
+  phases:
+  - namespaceRange:
+      min: 1
+      max: {{$namespaces}}
+    replicasPerNamespace: 1
+    tuningSet: UniformQPS
+    objectBundle:
+    - basename: small-dep
+      objectTemplatePath: dep.yaml
+      templateFillMap:
+        NumReplicas: 2
+
+
+- name: Wait Pods Running
+  measurements:
+  - Identifier: WaitForRunningDeployments
+    Method: WaitForControlledPodsRunning
+    Params:
+      action: gather
+
+- name: Create Service
+  phases:
+  - namespaceRange:
+      min: 1
+      max: {{$namespaces}}
+    replicasPerNamespace: 1
+    tuningSet: ILBConstantQPS
+    objectBundle:
+    - basename: small-dep-svc
+      objectTemplatePath: service.yaml
+      templateFillMap:
+        DeploymentBaseName: small-dep
+        ILBSizeLabel: small
+
+- name: Wait Service Ready
+  measurements:
+  - Identifier: ServiceCreationLatencySmall
+    Method: ServiceCreationLatency
+    Params:
+      action: waitForReady
+
+- name: Delete Service
+  phases:
+  - namespaceRange:
+      min: 1
+      max: {{$namespaces}}
+    replicasPerNamespace: 0
+    tuningSet: ILBConstantQPS
+    objectBundle:
+    - basename: small-dep-svc
+      objectTemplatePath: service.yaml
+
+- name: Delete Deployment
+  phases:
+  - namespaceRange:
+      min: 1
+      max: {{$namespaces}}
+    replicasPerNamespace: 0
+    tuningSet: UniformQPS
+    objectBundle:
+    - basename: small-dep
+      objectTemplatePath: dep.yaml
+    
+- name: Wait Pod Disappear
+  measurements:
+  - Identifier: WaitForRunningDeployments
+    Method: WaitForControlledPodsRunning
+    Params:
+      action: gather
+
+- name: Collect Data
+  measurements:
+  - Identifier: PodStartupLatency
+    Method: PodStartupLatency
+    Params:
+      action: gather
+  - Identifier: ServiceCreationLatencySmall
+    Method: ServiceCreationLatency
+    Params:
+      action: gather
+  - Identifier: APIResponsivenessPrometheusSimple
+    Method: APIResponsivenessPrometheus
+    Params:
+      action: gather
+      enableViolations: true
+      useSimpleLatencyQuery: true
+      summaryName: APIResponsivenessPrometheus_simple

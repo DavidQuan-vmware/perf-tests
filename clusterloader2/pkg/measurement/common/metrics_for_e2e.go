@@ -54,6 +54,7 @@ type metricsForE2EMeasurement struct{}
 
 // Execute gathers and prints e2e metrics data.
 func (m *metricsForE2EMeasurement) Execute(config *measurement.Config) ([]measurement.Summary, error) {
+	
 	provider := config.ClusterFramework.GetClusterConfig().Provider
 
 	grabMetricsFromKubelets, err := util.GetBoolOrDefault(config.Params, "gatherKubeletsMetrics", false)
@@ -73,6 +74,7 @@ func (m *metricsForE2EMeasurement) Execute(config *measurement.Config) ([]measur
 	if err != nil {
 		return nil, fmt.Errorf("failed to create MetricsGrabber: %v", err)
 	}
+	klog.V(2).Infof("%s: starting grab metrics...", m)
 	// Grab apiserver, scheduler, controller-manager metrics and (optionally) nodes' kubelet metrics.
 	received, err := grabber.Grab()
 	if err != nil {

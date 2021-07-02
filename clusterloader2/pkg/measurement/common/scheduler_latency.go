@@ -27,7 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/klog"
-	"k8s.io/kubernetes/pkg/master/ports"
+	//"k8s.io/kubernetes/pkg/master/ports"
 	schedulermetric "k8s.io/kubernetes/pkg/scheduler/metrics"
 	"k8s.io/perf-tests/clusterloader2/pkg/measurement"
 	measurementutil "k8s.io/perf-tests/clusterloader2/pkg/measurement/util"
@@ -120,6 +120,7 @@ func (s *schedulerLatencyMeasurement) Execute(config *measurement.Config) ([]mea
 	if err != nil {
 		return nil, err
 	}
+	klog.V(2).Infof("scraping scheduler metrics from %v, %v", masterIP, masterName)
 
 	switch action {
 	case "reset":
@@ -294,6 +295,8 @@ func (s *schedulerLatencyMeasurement) sendRequestToScheduler(c clientset.Interfa
 	}
 
 	var responseText string
+	// luwang hack for cluster deployed by tanzu 
+	masterRegistered = false
 	if masterRegistered {
 		ctx, cancel := context.WithTimeout(context.Background(), singleRestCallTimeout)
 		defer cancel()
@@ -301,7 +304,9 @@ func (s *schedulerLatencyMeasurement) sendRequestToScheduler(c clientset.Interfa
 		body, err := c.CoreV1().RESTClient().Verb(opUpper).
 			Namespace(metav1.NamespaceSystem).
 			Resource("pods").
-			Name(fmt.Sprintf("kube-scheduler-%v:%v", masterName, ports.InsecureSchedulerPort)).
+			//Name(fmt.Sprintf("kube-scheduler-%v:%v", masterName, ports.InsecureSchedulerPort)).
+			// luwang hack for cluster deployed by tanzu  not work
+			Name(fmt.Sprintf("kube-scheduler-%v:%v", masterName, 10259)).
 			SubResource("proxy").
 			Suffix("metrics").
 			Do(ctx).Raw()
@@ -312,7 +317,9 @@ func (s *schedulerLatencyMeasurement) sendRequestToScheduler(c clientset.Interfa
 		}
 		responseText = string(body)
 	} else {
-		cmd := "curl -X " + opUpper + " http://localhost:10251/metrics"
+		// luwang hack for cluster deployed by tanzu 
+		// cmd := "curl -X " + opUpper + " http://localhost:10251/metrics"
+		cmd := "curl -k -X " + opUpper + " https://localhost:10259/metrics"
 		sshResult, err := measurementutil.SSH(cmd, host+":22", provider)
 		if err != nil || sshResult.Code != 0 {
 			return "", fmt.Errorf("unexpected error (code: %d) in ssh connection to master: %#v", sshResult.Code, err)

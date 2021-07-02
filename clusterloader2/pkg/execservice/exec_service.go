@@ -23,6 +23,8 @@ import (
 	"os/exec"
 	"sync"
 	"time"
+	//"context"
+	
 
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -37,7 +39,7 @@ const (
 	execDeploymentNamespace = "cluster-loader"
 	execDeploymentName      = "exec-pod"
 	execDeploymentPath      = "pkg/execservice/manifest/exec_deployment.yaml"
-	execPodReplicas         = 3
+	execPodReplicas         = 10
 	execPodSelector         = "feature = exec"
 
 	execPodCheckInterval = 10 * time.Second
@@ -121,12 +123,18 @@ func TearDownExecService(f *framework.Framework) error {
 // RunCommand executes given command on a pod in cluster.
 func RunCommand(pod *corev1.Pod, cmd string) (string, error) {
 	var stdout, stderr bytes.Buffer
+	// Lu add timeout background since sometimes the curl cmd is hang in the container
+    //ctx, _ := context.WithTimeout(context.Background(), 1*time.Minute)
 	c := exec.Command("kubectl", "exec", fmt.Sprintf("--namespace=%v", pod.Namespace), pod.Name, "--", "/bin/sh", "-x", "-c", cmd)
+	//c := exec.CommandContext(ctx, "kubectl", "exec", fmt.Sprintf("--namespace=%v", pod.Namespace), pod.Name, "--", "/bin/sh", "-x", "-c", cmd)
 	c.Stdout, c.Stderr = &stdout, &stderr
+	//klog.V(2).Infof("exec cmd in pod %v for %v", pod.Name, cmd)
 	if err := c.Run(); err != nil {
 		return stderr.String(), err
 	}
+
 	return stdout.String(), nil
+
 }
 
 // GetPod get a exec service pod in a cluster.
