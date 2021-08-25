@@ -28,4 +28,8 @@ make benchmark
 cd -
 
 # Run the tool with args passed to this runner.
-${BENCHMARK_DIR}/build/benchmark --alsologtostderr ${BENCHMARK_ARGS}
+#${BENCHMARK_DIR}/build/benchmark --alsologtostderr ${BENCHMARK_ARGS} --left-job-name tkg-1.3.1-patch-ubuntu-node-throughput-k8s-1.20  --right-job-name fips-tkg-1.3.1-patch-ubuntu-node-throughput-k8s-1.20  --log-source-mode gcs_raw --run-selection-scheme last-n-runs  --n-runs-count 30 --comparison-scheme Avg-Test --gcs-credential-file /tmp/gcs.json
+#${BENCHMARK_DIR}/build/benchmark --alsologtostderr ${BENCHMARK_ARGS} --left-job-name tkg-1.3.1-patch-ubuntu-node-throughput-k8s-1.20  --right-job-name fips-tkg-1.3.1-patch-ubuntu-node-throughput-k8s-1.20  --log-source-mode gcs_raw --run-selection-scheme last-n-runs  --n-runs-count 30 --comparison-scheme KS-Test --gcs-credential-file /tmp/gcs.json
+#${BENCHMARK_DIR}/build/benchmark --alsologtostderr ${BENCHMARK_ARGS} --left-job-name tkg-1.3.1-patch-1c-100w-k8s-1.20 --right-job-name fips-tkg-1.3.1-patch-1c-100w-k8s-1.20  --log-source-mode gcs_raw --run-selection-scheme last-n-runs  --n-runs-count 10 --comparison-scheme Avg-Test --gcs-credential-file /tmp/gcs.json
+#${BENCHMARK_DIR}/build/benchmark --alsologtostderr ${BENCHMARK_ARGS} --left-job-name tkg-1.3.1-patch-1c-100w-k8s-1.20 --right-job-name fips-tkg-1.3.1-patch-1c-100w-k8s-1.20  --log-source-mode gcs_raw --run-selection-scheme last-n-runs  --n-runs-count 30 --comparison-scheme KS-Test --gcs-credential-file /tmp/gcs.json
+${BENCHMARK_DIR}/build/benchmark --alsologtostderr ${BENCHMARK_ARGS} --left-job-name tkg-1.3.1-patch-1c-500w-k8s-1.20 --right-job-name fips-tkg-1.3.1-patch-1c-500w-k8s-1.20  --log-source-mode gcs_raw --run-selection-scheme last-n-runs  --n-runs-count 10 --comparison-scheme Avg-Test --gcs-credential-file /tmp/gcs.json

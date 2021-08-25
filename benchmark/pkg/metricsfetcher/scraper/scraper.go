@@ -28,8 +28,14 @@ import (
 
 // Path prefixes for the metrics files we want to scrape.
 const (
-	APICallLatencyFilePrefix    = "artifacts/APIResponsiveness_"
-	PodStartupLatencyFilePrefix = "artifacts/PodStartupLatency_"
+	APICallLatencyFilePrefix    = "artifacts/APIResponsivenessPrometheus_simple_load1"
+	//PodStartupLatencyFilePrefix = "artifacts/PodStartupLatency1_"
+	PodStartupLatencyFilePrefix = "artifacts/PodStartupLatency_PodStartupLatency1"
+	//PodStartupLatencyFilePrefix = "artifacts/PodStartupLatency_CreatePhasePodStartupLatency"
+	//PodStartupLatencyFilePrefix = "artifacts/PodStartupLatency_HighThroughputPodStartupLatency"
+	SvcCreationLatencyFilePrefix = "artifacts/ServiceCreationLatency_Small_svc"
+	//SvcCreationLatencyFilePrefix = "artifacts/ServiceCreationLatency_Medium_svc"
+	//SvcCreationLatencyFilePrefix = "artifacts/ServiceCreationLatency_Big_svc"
 )
 
 // GetMetricsFilePathsForRun for a given run of a job, returns a map of testname ("load", "density", etc) to
@@ -45,6 +51,12 @@ func GetMetricsFilePathsForRun(job string, run int, utils util.JobLogUtils) map[
 	}
 	if podStartupLatencyFiles, err := utils.ListJobRunFilesWithPrefix(job, run, PodStartupLatencyFilePrefix); err == nil {
 		latencyFiles = append(latencyFiles, podStartupLatencyFiles...)
+	} else {
+		glog.V(0).Infof("Failed to list pod startup latency files for run %v:%v (skipping them): %v", job, run, err)
+	}
+
+	if svcCreationLatencyFiles, err := utils.ListJobRunFilesWithPrefix(job, run, SvcCreationLatencyFilePrefix); err == nil {
+		latencyFiles = append(latencyFiles, svcCreationLatencyFiles...)
 	} else {
 		glog.V(0).Infof("Failed to list pod startup latency files for run %v:%v (skipping them): %v", job, run, err)
 	}
@@ -85,6 +97,7 @@ func GetMetricsForRun(job string, run int, utils util.JobLogUtils) map[string][]
 			metricsForRun[testName] = append(metricsForRun[testName], perfData)
 		}
 	}
+	
 	return metricsForRun
 }
 

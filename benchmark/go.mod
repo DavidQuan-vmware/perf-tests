@@ -3,12 +3,22 @@ module k8s.io/perf-tests/benchmark
 go 1.15
 
 require (
+	cloud.google.com/go v0.93.3
+	cloud.google.com/go/storage v1.16.0 // indirect
 	github.com/aclements/go-moremath v0.0.0-20190830160640-d16893ddf098 // indirect
 	github.com/dgryski/go-onlinestats v0.0.0-20170612111826-1c7d19468768
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
+	github.com/googleapis/gax-go v1.0.3 // indirect
 	github.com/spf13/pflag v1.0.1
+	go.opencensus.io v0.23.0 // indirect
+	golang.org/x/net v0.0.0-20210813160813-60bc85c4be6d // indirect
+	golang.org/x/sys v0.0.0-20210823070655-63515b42dcdf // indirect
+	golang.org/x/text v0.3.7 // indirect
+	google.golang.org/api v0.54.0 // indirect
+	google.golang.org/genproto v0.0.0-20210821163610-241b8fcbd6c8 // indirect
 	k8s.io/contrib v0.0.0-20190411182844-89f6948e2457
 	k8s.io/kubernetes v1.15.0
+	k8s.io/perf-tests/perfdash v0.0.0-20210823142801-85a23e2aca3c // indirect
 )
 
 replace (
@@ -32,4 +42,5 @@ replace (
 	k8s.io/legacy-cloud-providers => k8s.io/legacy-cloud-providers v0.0.0-20190620090156-2138f2c9de18
 	k8s.io/metrics => k8s.io/metrics v0.0.0-20190620085625-3b22d835f165
 	k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.0.0-20190620085408-1aef9010884e
+	k8s.io/perf-tests/perfdash => ../perfdash
 )

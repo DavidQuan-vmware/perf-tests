@@ -22,6 +22,7 @@ import (
 	"math"
 	"sort"
 	"strconv"
+
 	"text/tabwriter"
 
 	"k8s.io/kubernetes/test/e2e/perftype"
@@ -29,6 +30,9 @@ import (
 	"github.com/golang/glog"
 )
 
+var pods_verbs = []string{"pod_startup", "create_to_schedule", "schedule_to_run", "run_to_watch", "schedule_to_watch"}
+//var svc_verbs = []string{"create_to_available_clusterip", "consecutivestart_to_available_clusterip", "create_to_startchecking_clusterip", "startchecking_to_consecutivestart_clusterip"}
+var svc_verbs = []string{"create_to_available_clusterip"}
 // MetricKey is used to identify a metric uniquely.
 type MetricKey struct {
 	TestName    string // Name of the test ("Load Capacity", "Density", etc)
@@ -134,6 +138,7 @@ func (j *JobComparisonData) addSampleValue(sample float64, testName, verb, resou
 	}
 	// Check if the metric exists in the map already, and add it if necessary.
 	metricKey := MetricKey{testName, verb, resource, subresource, scope, percentile}
+
 	if _, ok := j.Data[metricKey]; !ok {
 		j.Data[metricKey] = &MetricComparisonData{}
 	}
@@ -146,6 +151,7 @@ func (j *JobComparisonData) addSampleValue(sample float64, testName, verb, resou
 }
 
 func (j *JobComparisonData) addLatencyValue(latency *perftype.DataItem, minAllowedRequestCount int, testName string, fromLeftJob bool) {
+
 	if latency.Labels["Count"] != "" {
 		if count, err := strconv.Atoi(latency.Labels["Count"]); err != nil || count < minAllowedRequestCount {
 			return
@@ -155,12 +161,26 @@ func (j *JobComparisonData) addLatencyValue(latency *perftype.DataItem, minAllow
 	resource := latency.Labels["Resource"]
 	subresource := latency.Labels["Subresource"]
 	scope := latency.Labels["Scope"]
-	if latency.Labels["Metric"] == "pod_startup" {
-		verb = "Pod-Startup"
+	//if latency.Labels["Metric"] == "pod_startup" {
+	if stringInSlice(latency.Labels["Metric"], pods_verbs) {
+		//verb = "Pod-Startup"
+		verb = latency.Labels["Metric"]
+	}
+	if stringInSlice(latency.Labels["Metric"], svc_verbs) {
+		verb = latency.Labels["Metric"]
 	}
 	for percentile, value := range latency.Data {
 		j.addSampleValue(value, testName, verb, resource, subresource, scope, percentile, fromLeftJob)
 	}
+}
+
+func stringInSlice(a string, list []string) bool {
+    for _, b := range list {
+        if b == a {
+            return true
+        }
+    }
+    return false
 }
 
 // GetFlattennedComparisonData flattens latencies from various runs of left & right jobs into JobComparisonData.
@@ -205,6 +225,7 @@ func computeSampleStats(sample []float64, avg, stDev, max *float64) {
 	}
 	*avg = sum / float64(len)
 	*stDev = math.Sqrt(squareSum/float64(len) - (*avg * *avg))
+
 }
 
 // ComputeStatsForMetricSamples computes avg, std-dev and max for each metric's left and right samples.

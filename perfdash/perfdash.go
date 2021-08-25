@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package perfdash
 
 import (
 	"encoding/json"
@@ -94,7 +94,8 @@ func run() error {
 
 	switch options.Mode {
 	case gcsMode:
-		metricsBucket, err = NewGCSMetricsBucket(*logsBucket, *logsPath, *credentialPath)
+		//metricsBucket, err = NewGCSMetricsBucket(*logsBucket, *logsPath, *credentialPath)
+		metricsBucket = NewGCSMetricsBucket(*logsBucket, *logsPath, *credentialPath)
 	case s3Mode:
 		metricsBucket, err = NewS3MetricsBucket(*logsBucket, *logsPath, *awsRegion)
 	default:

@@ -21,11 +21,14 @@ import (
 	"io/ioutil"
 
 	"k8s.io/contrib/test-utils/utils"
+
+	"k8s.io/perf-tests/perfdash"
 )
 
 // Allowed source modes for fetching the metrics
 const (
 	GCS = "gcs"
+	GCS_Raw = "gcs_raw"
 	// TODO(shyamjvs): Add a mode to fetch metrics locally, if needed.
 )
 
@@ -52,6 +55,7 @@ func NewGCSLogUtils() GCSLogUtils {
 		googleGCSBucketUtils: utils.NewUtils(utils.KubekinsBucket, utils.LogDir),
 	}
 }
+
 
 // GetLatestBuildNumberForJob returns latest build number for the job.
 func (utils GCSLogUtils) GetLatestBuildNumberForJob(job string) (int, error) {
@@ -92,12 +96,49 @@ func (utils GCSLogUtils) ListJobRunFilesWithPrefix(job string, run int, prefix s
 	return utils.googleGCSBucketUtils.ListFilesInBuild(job, run, prefix)
 }
 
+
+type GCSRAWLogUtils struct {
+	JobLogUtils
+	googleGCSBucketUtils perfdash.MetricsBucket
+}
+
+// NewGCSLogUtils returns new GCSLogUtils struct with GCS utils initialized.
+func NewGCSRAWLogUtils(bucket, path, credentialPath string) GCSRAWLogUtils {
+	return GCSRAWLogUtils{
+		googleGCSBucketUtils: perfdash.NewGCSMetricsBucket(bucket, path, credentialPath),
+	}
+}
+
+
+func (utils GCSRAWLogUtils) GetBuildNumbersForJob(job string) ([]int, error) {
+	return utils.googleGCSBucketUtils.GetBuildNumbers(job)
+}
+
+// GetJobRunFinishedStatus returns the finished status (true/false) for the job run.
+func (utils GCSRAWLogUtils) GetJobRunFinishedStatus(job string, run int) (bool, error) {
+	return true, nil
+}
+
+// GetJobRunFileContents returns the contents of the file given by filepath (relative to run's root dir).
+func (utils GCSRAWLogUtils) GetJobRunFileContents(job string, run int, filepath string) ([]byte, error) {
+	return utils.googleGCSBucketUtils.ReadFile(job, run, filepath)
+}
+
+
+// ListJobRunFilesWithPrefix returns the list of files with a given path prefix in the job run's root dir.
+func (utils GCSRAWLogUtils) ListJobRunFilesWithPrefix(job string, run int, prefix string) ([]string, error) {
+	return utils.googleGCSBucketUtils.ListFilesInBuild(job, run, prefix)
+}
+
+
+
+
 // GetJobLogUtilsForMode gives the right utils object based on the source mode.
-func GetJobLogUtilsForMode(mode string) (JobLogUtils, error) {
-	switch mode {
+func GetJobLogUtilsForMode(args ...string) (JobLogUtils, error) {
+	switch args[0] {
 	case GCS:
 		return NewGCSLogUtils(), nil
 	default:
-		return nil, fmt.Errorf("unknown source mode '%v'", mode)
+		return nil, fmt.Errorf("unknown source mode '%v'", args[0])
 	}
 }

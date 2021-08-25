@@ -24,6 +24,7 @@ import (
 	"k8s.io/perf-tests/benchmark/pkg/metricsfetcher/runselector"
 	"k8s.io/perf-tests/benchmark/pkg/metricsfetcher/scraper"
 	mfutil "k8s.io/perf-tests/benchmark/pkg/metricsfetcher/util"
+
 	"k8s.io/perf-tests/benchmark/pkg/util"
 
 	"github.com/golang/glog"
@@ -40,6 +41,9 @@ var (
 	comparisonScheme          string
 	matchThreshold            float64
 	minMetricAvgForCompare    float64
+	gcsBucket                 string
+	gcsfolder                    string
+	gcsCredential             string
 )
 
 func registerFlags(fs *pflag.FlagSet) {
@@ -48,16 +52,29 @@ func registerFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&logSourceMode, "log-source-mode", "gcs", fmt.Sprintf("Source mode for getting the logs. Allowed options: %v", mfutil.GCS))
 	fs.StringVar(&runSelectionScheme, "run-selection-scheme", runselector.LastNHours, fmt.Sprintf("Scheme for selecting the runs to be compared. Allowed options: %v, %v", runselector.LastNHours, runselector.LastNRuns))
 	fs.IntVar(&nHoursCount, "n-hours-count", 24, "Value of 'n' to use in the last-n-hours run-selection scheme")
-	fs.IntVar(&nRunsCount, "n-runs-count", 20, "Value of 'n' to use in the last-n-runs run-selection scheme")
+	fs.IntVar(&nRunsCount, "n-runs-count", 20, "Value of 'n' to use in the last-n-runs run-selection scheme, this param only supports in log-source-mode setting as gcs_raw")
 	fs.IntVar(&minAllowedAPIRequestCount, "min-allowed-api-request-count", 10, "The minimum requests count for an API call (within a particular test of a particular run) to be included for comparison")
 	fs.StringVar(&comparisonScheme, "comparison-scheme", comparer.AvgTest, fmt.Sprintf("Statistical test to be used as the algorithm for comparison. Allowed options: %v, %v", comparer.AvgTest, comparer.KSTest))
 	fs.Float64Var(&matchThreshold, "match-threshold", 0.66, "The threshold for metric comparison, interpretation depends on test used (significance level for KSTest, bound for ratio of avgs in AvgTest)")
 	fs.Float64Var(&minMetricAvgForCompare, "min-metric-avg-for-compare", 50.0, "The minimum value for a metric's avg to consider it for comparison. If in both left & right job the avg is less than this, it's directly marked as matched.")
+    fs.StringVar(&gcsBucket, "gcs-bucket-name", "tkg-scale", "gcs bucket name to retrieve metric")
+	fs.StringVar(&gcsfolder, "gcs-bucket-sub-folder", "logs", "sub folder under the gsc bucket")
+	fs.StringVar(&gcsCredential, "gcs-credential-file", "", "gcs credential file path")
 }
 
+func GetJobLogUtilsForMode() (mfutil.JobLogUtils, error) {
+	switch logSourceMode {
+	case mfutil.GCS:
+		return mfutil.NewGCSLogUtils(), nil
+	case mfutil.GCS_Raw:
+		return mfutil.NewGCSRAWLogUtils(gcsBucket, gcsfolder, gcsCredential), nil
+	default:
+		return nil, fmt.Errorf("unknown source mode '%v'", logSourceMode)
+	}
+}
 // Select the runs of the left and right jobs to be used for comparison using the given run-selection scheme.
 func selectRuns() ([]int, []int) {
-	utils, err := mfutil.GetJobLogUtilsForMode(logSourceMode)
+	utils, err := GetJobLogUtilsForMode()
 	if err != nil {
 		glog.Fatalf("Couldn't obtain log utils: %v", err)
 	}
@@ -85,7 +102,8 @@ func selectRuns() ([]int, []int) {
 
 // Obtain the metrics for the left and right job runs provided.
 func getMetrics(leftJobRuns, rightJobRuns []int) *util.JobComparisonData {
-	utils, err := mfutil.GetJobLogUtilsForMode(logSourceMode)
+	//utils, err := mfutil.GetJobLogUtilsForMode(logSourceMode)
+	utils, err := GetJobLogUtilsForMode()
 	if err != nil {
 		glog.Fatalf("Couldn't obtain log utils: %v", err)
 	}

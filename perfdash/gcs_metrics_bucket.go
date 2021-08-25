@@ -1,12 +1,9 @@
 /*
 Copyright 2016 The Kubernetes Authors.
-
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
-
     http://www.apache.org/licenses/LICENSE-2.0
-
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -14,7 +11,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package perfdash
 
 import (
 	"context"
@@ -37,7 +34,8 @@ type GCSMetricsBucket struct {
 }
 
 // NewGCSMetricsBucket creates a new GCSMetricsBucket.
-func NewGCSMetricsBucket(bucket, path, credentialPath string) (MetricsBucket, error) {
+func NewGCSMetricsBucket(bucket, path, credentialPath string) (MetricsBucket) {
+//func NewGCSMetricsBucket(bucket, path, credentialPath string) (MetricsBucket, error) {
 	ctx := context.Background()
 	authOpt := option.WithoutAuthentication()
 	if credentialPath != "" {
@@ -45,14 +43,21 @@ func NewGCSMetricsBucket(bucket, path, credentialPath string) (MetricsBucket, er
 	}
 	c, err := storage.NewClient(ctx, authOpt)
 	if err != nil {
-		return nil, err
+		//return nil, err
+		return nil
 	}
 	b := c.Bucket(bucket)
+/*	return &GCSMetricsBucket{
+		client:  c,
+		bucket:  b,
+		logPath: path,
+	}, nil*/
+
 	return &GCSMetricsBucket{
 		client:  c,
 		bucket:  b,
 		logPath: path,
-	}, nil
+	}
 }
 
 // GetBuildNumbers fetches the build numbers from a GCS Bucket.
