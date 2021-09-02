@@ -112,6 +112,11 @@ var (
 				OutputFilePrefix: "ResourceUsageSummary",
 				Parser:           parseResourceUsageData,
 			}},
+			"Svc_Resources": []TestDescription{{
+				Name:             "svc",
+				OutputFilePrefix: "ResourceUsageSummary",
+				Parser:           parseResourceUsageData,
+			}},
 		},
 		"APIServer": {
 			"DensityResponsiveness": []TestDescription{{
@@ -225,6 +230,11 @@ var (
 			"InitEventsCount": []TestDescription{{
 				OutputFilePrefix: "MetricsForE2E",
 				Parser:           parseApiserverInitEventsCount,
+			}},
+			"Svc_Responsiveness_PrometheusSimple": []TestDescription{{
+				Name:             "svc",
+				OutputFilePrefix: "APIResponsivenessPrometheus_simple",
+				Parser:           parsePerfData,
 			}},
 		},
 		"Scheduler": {
@@ -373,6 +383,27 @@ var (
 				}, {
 					Name:             "density",
 					OutputFilePrefix: "InClusterNetworkLatency",
+					Parser:           parsePerfData,
+				}},
+			
+			"Big_Svc_Readiness": []TestDescription{{
+					Name:             "svc",
+					OutputFilePrefix: "ServiceCreationLatency_Big",
+					Parser:           parsePerfData,
+				}},
+			"Medium_Svc_Readiness": []TestDescription{{
+					Name:             "svc",
+					OutputFilePrefix: "ServiceCreationLatency_Medium",
+					Parser:           parsePerfData,
+				}},
+			"Small_Svc_Readiness": []TestDescription{{
+					Name:             "svc",
+					OutputFilePrefix: "ServiceCreationLatency_Small",
+					Parser:           parsePerfData,
+				}},
+			"Base_Svc_Readiness": []TestDescription{{
+					Name:             "svc",
+					OutputFilePrefix: "ServiceCreationLatency_Base",
 					Parser:           parsePerfData,
 				}},
 		},
