@@ -28,10 +28,14 @@ func RemoveDisambiguationInfixes(podAndContainer string) string {
 		return podAndContainer
 	}
 	pod, container := split[0], split[1]
+
+	if strings.Contains(pod, "control-plane-") || strings.Contains(pod, "md") {
+		return HandleClusterAPINode(pod, container)
+	}
 	pieces := strings.Split(pod, "-")
 	var last string
 	for i, piece := range pieces {
-		if looksLikeHash(piece) || versionRegexp.MatchString(piece) {
+		if looksLikeHash(piece) || versionRegexp.MatchString(piece)  {
 			break
 		}
 		last = strings.Join(pieces[:i+1], "-")
@@ -42,4 +46,22 @@ func RemoveDisambiguationInfixes(podAndContainer string) string {
 // looksLikeHash returns true if piece seems to be one of those pseudo-random disambiguation strings
 func looksLikeHash(piece string) bool {
 	return len(piece) >= 4 && !strings.ContainsAny(piece, "eyuioa")
+}
+
+func HandleClusterAPINode(pod, container string) string {
+	idx := strings.Index(pod, "control-plane")
+	if idx != -1 {
+		return pod[:idx] + "control-plane/" + container
+	}
+
+	pieces := strings.Split(pod, "-")
+	i := 0
+	piece := ""
+	for i, piece = range pieces {
+	     if piece == "md" {
+			 i = i + 1
+			 break
+		 }
+	}  
+	return strings.Join(pieces[:i+1], "-") + "/" + container
 }

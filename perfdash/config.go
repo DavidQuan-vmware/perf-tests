@@ -57,6 +57,14 @@ var (
 	// performanceDescriptions contains metrics exported by a --ginko.focus=[Feature:Performance]
 	// e2e test
 	performanceDescriptions = TestDescriptions{
+		"ClusterAPI": {
+			"Machine_Create_Latency": []TestDescription{{
+				Name:             "mgmt-cluster",
+				OutputFilePrefix: "MachineCreationLatency_MachineCreationLatency",
+				Parser:           parsePerfData,
+			}},
+		},
+
 		"E2E": {
 			"DensityResources": []TestDescription{{
 				Name:             "density",
@@ -351,6 +359,22 @@ var (
 			}},
 			"LoadWalFsyncDuration": []TestDescription{{
 				Name:             "load",
+				OutputFilePrefix: "EtcdMetrics",
+				Parser:           parseHistogramMetric("walFsyncDuration"),
+			}},
+			"BackendCommitDuration": []TestDescription{{
+				OutputFilePrefix: "EtcdMetrics",
+				Parser:           parseHistogramMetric("backendCommitDuration"),
+			}},
+			"SnapshotSaveTotalDuration": []TestDescription{{
+				OutputFilePrefix: "EtcdMetrics",
+				Parser:           parseHistogramMetric("snapshotSaveTotalDuration"),
+			}},
+			"PeerRoundTripTime": []TestDescription{{
+				OutputFilePrefix: "EtcdMetrics",
+				Parser:           parseHistogramMetric("peerRoundTripTime"),
+			}},
+			"WalFsyncDuration": []TestDescription{{
 				OutputFilePrefix: "EtcdMetrics",
 				Parser:           parseHistogramMetric("walFsyncDuration"),
 			}},
