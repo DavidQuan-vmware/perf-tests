@@ -33,5 +33,5 @@ if [[ "${DEPLOY_GCI_DRIVER:-false}" == "true" ]]; then
    kubectl wait pods -l app=gcp-compute-persistent-disk-csi-driver --for condition=Ready --timeout=300s
 fi
 
-cd "${CLUSTERLOADER_ROOT}"/ && go build -o clusterloader './cmd/'
+cd "${CLUSTERLOADER_ROOT}"/ && go build -mod=mod -o clusterloader './cmd/'
 ./clusterloader --alsologtostderr --v="${CL2_VERBOSITY:-2}" "$@"

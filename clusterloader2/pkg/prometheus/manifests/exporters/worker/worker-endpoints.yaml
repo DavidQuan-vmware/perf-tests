@@ -1,0 +1,14 @@
+# Endpoints object for the kubelet running on master node.
+apiVersion: v1
+kind: Endpoints
+metadata:
+  namespace: monitoring
+  name: worker
+  labels:
+    k8s-app: worker
+subsets:
+  - addresses:
+    - ip:  20.20.34.37
+    ports:
+      - name: kubelet
+        port: 10250

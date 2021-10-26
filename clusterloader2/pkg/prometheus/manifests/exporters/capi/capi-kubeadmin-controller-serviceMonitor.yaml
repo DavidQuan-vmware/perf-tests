@@ -1,0 +1,22 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+    k8s-app: capi-kubeadm-control-plane-controller-manager
+  name: capi-kubeadm-control-plane-controller-manager
+  namespace: monitoring
+spec:
+  endpoints:
+  - bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+    interval: 15s
+    port: https
+    scheme: https
+    tlsConfig:
+      insecureSkipVerify: true
+  jobLabel: capi-kubeadm-control-plane-controller-manager
+  namespaceSelector:
+    matchNames:
+    - capi-kubeadm-control-plane-system
+  selector:
+    matchLabels:
+      control-plane: controller-manager

@@ -31,7 +31,6 @@ spec:
         - --kubelet-service=kube-system/kubelet
         {{end}}
         - --prometheus-config-reloader=gcr.io/k8s-testimages/quay.io/prometheus-operator/prometheus-config-reloader:v0.46.0
-        - --secret-field-selector=type=prometheus-alert
         image: gcr.io/k8s-testimages/quay.io/prometheus-operator/prometheus-operator:v0.46.0
         name: prometheus-operator
         ports:
@@ -40,10 +39,10 @@ spec:
         resources:
           limits:
             cpu: 200m
-            memory: {{IfThenElse (lt .Nodes 500) 200 400}}Mi
+            memory: 200Mi
           requests:
-            cpu: 200m
-            memory: {{IfThenElse (lt .Nodes 500) 200 400}}Mi
+            cpu: 100m
+            memory: 100Mi
         securityContext:
           allowPrivilegeEscalation: false
           readOnlyRootFilesystem: true

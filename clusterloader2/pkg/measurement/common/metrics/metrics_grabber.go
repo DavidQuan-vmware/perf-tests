@@ -27,7 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/kubernetes/pkg/master/ports"
-	e2epod "k8s.io/kubernetes/test/e2e/framework/pod"
+	//e2epod "k8s.io/kubernetes/test/e2e/framework/pod"
 	"k8s.io/kubernetes/test/e2e/system"
 
 	"k8s.io/klog"
@@ -169,10 +169,10 @@ func (g *Grabber) GrabFromControllerManager() (ControllerManagerMetrics, error) 
 	var err error
 	podName := fmt.Sprintf("%v-%v", "kube-controller-manager", g.masterName)
 	g.waitForControllerManagerReadyOnce.Do(func() {
-		if readyErr := e2epod.WaitForPodsReady(g.client, metav1.NamespaceSystem, podName, 0); readyErr != nil {
-			err = fmt.Errorf("error waiting for controller manager pod to be ready: %w", readyErr)
-			return
-		}
+		// if readyErr := e2epod.WaitForPodsReady(g.client, metav1.NamespaceSystem, podName, 0); readyErr != nil {
+		// 	err = fmt.Errorf("error waiting for controller manager pod to be ready: %w", readyErr)
+		// 	return
+		// }
 
 		var lastMetricsFetchErr error
 		if metricsWaitErr := wait.PollImmediate(time.Second, time.Minute, func() (bool, error) {

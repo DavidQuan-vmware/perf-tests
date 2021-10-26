@@ -208,7 +208,7 @@ func (e *etcdMetricsMeasurement) getEtcdMetrics(host string, provider provider.P
 		klog.Warning("empty etcd cert or key, using http")
 		cmd = fmt.Sprintf("curl http://%s:2379/metrics", etcdHost)
 	} else {
-		cmd = fmt.Sprintf("curl -k --cert %s --key %s https://%s:2379/metrics", etcdCert, etcdKey, etcdHost)
+		cmd = fmt.Sprintf("sudo curl -k --cert %s --key %s https://%s:2379/metrics", etcdCert, etcdKey, etcdHost)
 	}
 
 	return e.sshEtcdMetrics(cmd, host, provider)

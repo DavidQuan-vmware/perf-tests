@@ -1,0 +1,14 @@
+# Service object for the kubelet running on worker node.
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: monitoring
+  name: worker
+  labels:
+    k8s-app: worker
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+    - name: kubelet
+      port: 10250
