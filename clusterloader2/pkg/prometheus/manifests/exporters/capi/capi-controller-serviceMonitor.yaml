@@ -1,0 +1,24 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+    k8s-app: capi-controller-manager
+    release: kube-prometheus-stack
+    app: kube-prometheus-stack
+  name: capi-controller-manager
+  namespace: monitoring
+spec:
+  endpoints:
+  - bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+    interval: 15s
+    port: https
+    scheme: https
+    tlsConfig:
+      insecureSkipVerify: true
+  jobLabel: capi-controller-manager
+  namespaceSelector:
+    matchNames:
+    - capi-system
+  selector:
+    matchLabels:
+      control-plane: controller-manager

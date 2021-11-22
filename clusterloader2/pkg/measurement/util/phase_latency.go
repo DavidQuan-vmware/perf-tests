@@ -50,6 +50,15 @@ func NewObjectTransitionTimes(name string) *ObjectTransitionTimes {
 	}
 }
 
+func (o *ObjectTransitionTimes) Print() {
+	o.lock.Lock()
+	defer o.lock.Unlock()
+	for n, times := range o.times {
+		klog.V(2).Infof(n)
+		klog.V(2).Infof("%v", times)
+	}
+}
+
 // Set sets time of given phase for given key.
 func (o *ObjectTransitionTimes) Set(key, phase string, t time.Time) {
 	o.lock.Lock()

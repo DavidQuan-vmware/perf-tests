@@ -1,5 +1,5 @@
 {{$PROMETHEUS_SCRAPE_ETCD := DefaultParam .PROMETHEUS_SCRAPE_ETCD false}}
-{{$PROMETHEUS_SCRAPE_KUBELETS := DefaultParam .PROMETHEUS_SCRAPE_KUBELETS false}}
+{{$PROMETHEUS_SCRAPE_KUBELETS := DefaultParam .PROMETHEUS_SCRAPE_KUBELETS true}}
 {{$PROMETHEUS_SCRAPE_NODE_EXPORTER := DefaultParam .PROMETHEUS_SCRAPE_NODE_EXPORTER false}}
 
 # If kube-apiserver is overloaded, we might get slower responses.
@@ -17,8 +17,14 @@ spec:
   {{if $PROMETHEUS_SCRAPE_ETCD}}
   - interval: 5s
     port: etcd-2379
-  - interval: 5s
-    port: etcd-2382
+    # luwang hack for cls by tanzu
+    scheme: https                                                               
+    tlsConfig:
+      insecureSkipVerify: true                                                                    
+      certFile: /etc/prometheus/secrets/kube-etcd-client-certs/server.crt                                                    
+      keyFile: /etc/prometheus/secrets/kube-etcd-client-certs/server.key 
+  # - interval: 5s
+  #   port: etcd-2382
   {{end}}
   {{if $PROMETHEUS_SCRAPE_NODE_EXPORTER}}
   # TODO(mborsz): Debug why node-exporter is that slow and change interval back to 5s.
@@ -40,24 +46,28 @@ spec:
   - interval: 5s
     port: kubelet
     scheme: https
+    bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
     tlsConfig:
       insecureSkipVerify: true
   - interval: 5s
     port: kubelet
     path: /metrics/cadvisor
     scheme: https
+    bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
     tlsConfig:
       insecureSkipVerify: true
   {{end}}
-  - interval: 5s
-    port: kube-scheduler
-    scheme: https
-    tlsConfig:
-      insecureSkipVerify: true
-  - interval: 5s
-    port: kube-controller-manager
-    scheme: https
-    tlsConfig:
-      insecureSkipVerify: true
+  # - interval: 5s
+  #   port: kube-scheduler
+  #   scheme: https
+  #   tlsConfig:
+  #     insecureSkipVerify: true
+  # - interval: 5s
+  #   port: kube-controller-manager
+  #   scheme: https
+  #   tlsConfig:
+  #     insecureSkipVerify: true
   selector:
-    k8s-app: master
+    matchLabels:
+      k8s-app: master
+

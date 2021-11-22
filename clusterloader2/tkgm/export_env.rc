@@ -1,0 +1,9 @@
+export ETCD_CERTIFICATE=/etc/kubernetes/pki/etcd/server.crt                     
+export ETCD_KEY=/etc/kubernetes/pki/etcd/server.key                             
+export KUBE_SSH_KEY="/root/.ssh/id_rsa"
+export LOCAL_SSH_KEY="/root/.ssh/id_rsa"                                         
+export KUBE_SSH_USER="capv"
+export masterip=20.20.34.36,20.20.34.38,20.20.34.39
+export CL2_ENABLE_HUGE_SERVICES=true
+export CL2_SCHEDULER_THROUGHPUT_THRESHOLD=0
+export CL2_ENABLE_DNS_PROGRAMMING=true

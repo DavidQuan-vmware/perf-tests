@@ -1,0 +1,26 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+    k8s-app: worker
+  name: worker
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      k8s-app: worker
+  endpoints:
+  - interval: 5s
+    port: kubelet
+    bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+    scheme: https
+    tlsConfig:
+      insecureSkipVerify: true
+  - interval: 5s
+    port: kubelet
+    bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+    path: /metrics/cadvisor
+    scheme: https
+    tlsConfig:
+      insecureSkipVerify: true
+
