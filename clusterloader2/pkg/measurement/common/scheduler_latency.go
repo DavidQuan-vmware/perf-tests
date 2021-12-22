@@ -293,6 +293,8 @@ func (s *schedulerLatencyMeasurement) sendRequestToScheduler(c clientset.Interfa
 		return "", fmt.Errorf("unknown REST request")
 	}
 
+	// luwang hack for cluster deployed by tanzu 
+	masterRegistered = false
 	var responseText string
 	if masterRegistered {
 		ctx, cancel := context.WithTimeout(context.Background(), singleRestCallTimeout)

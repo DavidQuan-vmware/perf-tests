@@ -37,7 +37,7 @@ const (
 	execDeploymentNamespace = "cluster-loader"
 	execDeploymentName      = "exec-pod"
 	execDeploymentPath      = "pkg/execservice/manifest/exec_deployment.yaml"
-	execPodReplicas         = 3
+	execPodReplicas         = 10
 	execPodSelector         = "feature = exec"
 
 	execPodCheckInterval = 10 * time.Second

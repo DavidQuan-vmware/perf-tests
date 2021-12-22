@@ -1,0 +1,62 @@
+{{$HostNetworkMode := DefaultParam .CL2_USE_HOST_NETWORK_PODS false}}
+{{$EnablePVs := DefaultParam .CL2_ENABLE_PVS true}}
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{.Name}}
+  labels:
+    group: density
+spec:
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      group: density
+      name: {{.Name}}
+  serviceName: {{.Name}}
+  replicas: {{.Replicas}}
+  template:
+    metadata:
+      labels:
+        group: density
+        name: {{.Name}}
+    spec:
+      nodeSelector;
+        mtype: density
+      hostNetwork: {{$HostNetworkMode}}
+      containers:
+      - name: {{.Name}}
+        image: {{.Image}}
+        resources:
+          requests:
+            cpu: 10m
+            memory: "10M"
+        {{if $EnablePVs}}
+        volumeMounts:
+          - name: pv
+            mountPath: /var/pv
+        {{end}}
+      terminationGracePeriodSeconds: 1
+      # Add not-ready/unreachable tolerations for 15 minutes so that node
+      # failure doesn't trigger pod deletion.
+      tolerations:
+      - key: "node.kubernetes.io/not-ready"
+        operator: "Exists"
+        effect: "NoExecute"
+        tolerationSeconds: 900
+      - key: "node.kubernetes.io/unreachable"
+        operator: "Exists"
+        effect: "NoExecute"
+        tolerationSeconds: 900
+  {{if $EnablePVs}}
+  # NOTE: PVs created this way should be cleaned-up manually, as deleting the StatefulSet doesn't automatically delete PVs.
+  # To avoid deleting all the PVs at once during namespace deletion, they should be deleted explicitly via Phase.
+  volumeClaimTemplates:
+    - metadata:
+        name: pv
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: 100Mi
+  {{end}}

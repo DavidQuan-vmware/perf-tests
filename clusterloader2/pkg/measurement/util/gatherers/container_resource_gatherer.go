@@ -103,10 +103,10 @@ func NewResourceUsageGatherer(c clientset.Interface, host string, port int, prov
 			provider:                    provider,
 		})
 	} else {
-		pods, err := c.CoreV1().Pods(namespace).List(context.TODO(), metav1.ListOptions{})
-		if err != nil {
-			return nil, fmt.Errorf("listing pods error: %v", err)
-		}
+		// pods, err := c.CoreV1().Pods(namespace).List(context.TODO(), metav1.ListOptions{})
+		// if err != nil {
+		// 	return nil, fmt.Errorf("listing pods error: %v", err)
+		// }
 
 		nodeList, err := c.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})
 		if err != nil {
@@ -121,21 +121,43 @@ func NewResourceUsageGatherer(c clientset.Interface, host string, port int, prov
 		}
 
 		nodesToConsider := make(map[string]bool)
-		for _, pod := range pods.Items {
-			if (options.Nodes == MasterAndNonDaemons) && !masterNodes.Has(pod.Spec.NodeName) && isDaemonPod(&pod) {
-				continue
-			}
-			for _, container := range pod.Status.InitContainerStatuses {
-				g.containerIDs = append(g.containerIDs, container.Name)
-			}
-			for _, container := range pod.Status.ContainerStatuses {
-				g.containerIDs = append(g.containerIDs, container.Name)
-			}
-			if options.Nodes == MasterAndNonDaemons {
-				nodesToConsider[pod.Spec.NodeName] = true
+		// for _, pod := range pods.Items {
+		// 	if (options.Nodes == MasterAndNonDaemons) && !masterNodes.Has(pod.Spec.NodeName) && isDaemonPod(&pod) {
+		// 		continue
+		// 	}
+		// 	for _, container := range pod.Status.InitContainerStatuses {
+		// 		g.containerIDs = append(g.containerIDs, container.Name)
+		// 	}
+		// 	for _, container := range pod.Status.ContainerStatuses {
+		// 		g.containerIDs = append(g.containerIDs, container.Name)
+		// 	}
+		// 	if options.Nodes == MasterAndNonDaemons {
+		// 		nodesToConsider[pod.Spec.NodeName] = true
+		// 	}
+		// }
+		
+		// hardcode for now, will change to param
+		ns_lst := []string{namespace, "avi-system", "tkg-system-public", "tkg-system", "tanzu-system"}
+	    for _, ns := range ns_lst {
+			pods, err := c.CoreV1().Pods(ns).List(context.TODO(), metav1.ListOptions{})
+			if err != nil {
+				return nil, fmt.Errorf("listing pods error: %v", err)
+			}	
+			for _, pod := range pods.Items {
+				if (options.Nodes == MasterAndNonDaemons) && !masterNodes.Has(pod.Spec.NodeName) && isDaemonPod(&pod) {
+					continue
+				}
+				for _, container := range pod.Status.InitContainerStatuses {
+					g.containerIDs = append(g.containerIDs, container.Name)
+				}
+				for _, container := range pod.Status.ContainerStatuses {
+					g.containerIDs = append(g.containerIDs, container.Name)
+				}
+				if options.Nodes == MasterAndNonDaemons {
+					nodesToConsider[pod.Spec.NodeName] = true
+				}
 			}
 		}
-
 		for _, node := range nodeList.Items {
 			if options.Nodes == AllNodes || masterNodes.Has(node.Name) || nodesToConsider[node.Name] {
 				g.workerWg.Add(1)

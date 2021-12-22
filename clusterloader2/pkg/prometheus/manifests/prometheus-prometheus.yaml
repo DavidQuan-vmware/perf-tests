@@ -33,6 +33,8 @@ spec:
   ruleSelector:
     matchLabels:
       prometheus: k8s
+  secrets:                                                                      
+  - kube-etcd-client-certs
   securityContext:
     fsGroup: 2000
     runAsNonRoot: true

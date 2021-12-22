@@ -5,9 +5,9 @@ kind: StorageClass
 apiVersion: storage.k8s.io/v1
 metadata:
   name: ssd
-provisioner: {{$PROMETHEUS_STORAGE_CLASS_PROVISIONER}}
+provisioner: csi.vsphere.vmware.com
 parameters:
-  type: {{$PROMETHEUS_STORAGE_CLASS_VOLUME_TYPE}}
+  datastoreurl: "ds:///vmfs/volumes/vsan:5249834a9f288b9b-4e35d9ee48be834d/"
 {{if .RetainPD}}
 reclaimPolicy: Retain
 {{end}}

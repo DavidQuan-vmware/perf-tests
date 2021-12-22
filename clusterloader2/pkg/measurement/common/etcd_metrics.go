@@ -193,14 +193,16 @@ func (e *etcdMetricsMeasurement) getEtcdMetrics(host string, provider provider.P
 	// in order to bypass TLS credential requirement when checking etc /metrics and /health, you
 	// need to provide the insecure http port number to access etcd, http://localhost:2382 for
 	// example.
-	cmd := fmt.Sprintf("curl http://localhost:%d/metrics", port)
-	if samples, err := e.sshEtcdMetrics(cmd, host, provider); err == nil {
-		return samples, nil
-	}
+	// cmd := fmt.Sprintf("curl http://localhost:%d/metrics", port)
+	// if samples, err := e.sshEtcdMetrics(cmd, host, provider); err == nil {
+	// 	return samples, nil
+	// }
 
 	// Use old endpoint if new one fails, "2379" is hard-coded here as well, it is kept as is since
 	// we don't want to bloat the cluster config only for a fall-back attempt.
 	etcdCert, etcdKey, etcdHost := os.Getenv("ETCD_CERTIFICATE"), os.Getenv("ETCD_KEY"), os.Getenv("ETCD_HOST")
+	etcdHost = host
+	cmd := ""
 	if etcdHost == "" {
 		etcdHost = "localhost"
 	}
@@ -208,7 +210,7 @@ func (e *etcdMetricsMeasurement) getEtcdMetrics(host string, provider provider.P
 		klog.Warning("empty etcd cert or key, using http")
 		cmd = fmt.Sprintf("curl http://%s:2379/metrics", etcdHost)
 	} else {
-		cmd = fmt.Sprintf("curl -k --cert %s --key %s https://%s:2379/metrics", etcdCert, etcdKey, etcdHost)
+		cmd = fmt.Sprintf("sudo curl -k --cert %s --key %s https://%s:2379/metrics", etcdCert, etcdKey, etcdHost)
 	}
 
 	return e.sshEtcdMetrics(cmd, host, provider)

@@ -130,14 +130,30 @@ func getPodMetrics(config *measurement.Config) (*systemPodsMetrics, error) {
 	return extractMetrics(lst), nil
 }
 
-func getPodList(client kubernetes.Interface) (*v1.PodList, error) {
+//func getPodList(client kubernetes.Interface) (*v1.PodList, error) {
+func getPodList(client kubernetes.Interface) ([]v1.Pod, error) {
 	lst, err := client.CoreV1().Pods(systemNamespace).List(context.TODO(), metav1.ListOptions{
 		ResourceVersion: "0", // to read from cache
 	})
 	if err != nil {
 		return nil, err
 	}
-	return lst, nil
+	//return lst, nil
+	pods_lst := lst.Items
+
+	ns_lst := []string{ "avi-system", "tanzu-system", "tkg-system", "tkg-system-public"}
+	for _, ns := range ns_lst {
+		lst_t, err := client.CoreV1().Pods(ns).List(context.TODO(), metav1.ListOptions{
+			ResourceVersion: "0", // to read from cache
+		})
+		if err != nil {
+			klog.V(2).Info("failed to collect pod metrics in ns %v", ns)
+			continue
+		}
+		pods_lst = append(pods_lst,lst_t.Items...)
+	}	
+
+	return pods_lst, nil
 }
 
 func subtractInitialRestartCounts(metrics *systemPodsMetrics, initMetrics *systemPodsMetrics) {
@@ -230,11 +246,13 @@ func getThresholdOverrides(config *measurement.Config) (map[string]int, error) {
 	return parsed, nil
 }
 
-func extractMetrics(lst *v1.PodList) *systemPodsMetrics {
+//func extractMetrics(lst *v1.PodList) *systemPodsMetrics {
+func extractMetrics(lst []v1.Pod) *systemPodsMetrics {
 	metrics := systemPodsMetrics{
-		Pods: []podMetrics{},
-	}
-	for _, pod := range lst.Items {
+			Pods: []podMetrics{},
+		}
+	// for _, pod := range lst.Items {
+	for _, pod := range lst {
 		podMetrics := podMetrics{
 			Containers: []containerMetrics{},
 			Name:       pod.Name,

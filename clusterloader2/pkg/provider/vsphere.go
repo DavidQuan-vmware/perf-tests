@@ -61,6 +61,7 @@ func (p *VsphereProvider) RunSSHCommand(cmd, host string) (string, string, int, 
 		return "", "", 0, err
 	}
 	user := defaultSSHUser()
+	user = "capv"
 	return sshutil.RunSSHCommand(cmd, user, host, signer)
 }
 

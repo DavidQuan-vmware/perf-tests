@@ -379,7 +379,7 @@ func (pc *Controller) isPrometheusReady() (bool, error) {
 		return CheckTargetsReady( // 1 out of 2 etcd targets should be ready.
 			pc.framework.GetClientSets().GetClient(),
 			func(t Target) bool { return isEtcdEndpoint(t.Labels["endpoint"]) },
-			2, // expected targets: etcd-2379 and etcd-2382
+			1, // expected targets: etcd-2379 and etcd-2382
 			1) // one of them should be healthy
 	}
 	return CheckAllTargetsReady(

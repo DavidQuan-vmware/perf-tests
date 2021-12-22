@@ -57,7 +57,7 @@ func GetOneTimeResourceUsageOnNode(c clientset.Interface, nodeName string, port 
 	}
 	// Process container infos that are relevant to us.
 	containers := containerNames()
-	usageMap := make(util.ResourceUsagePerContainer, len(containers)+len(summary.Node.SystemContainers))
+	usageMap := make(util.ResourceUsagePerContainer, len(containers)+len(summary.Node.SystemContainers)) + 1
 	for _, pod := range summary.Pods {
 		for _, container := range pod.Containers {
 			isInteresting := false
@@ -82,6 +82,17 @@ func GetOneTimeResourceUsageOnNode(c clientset.Interface, nodeName string, port 
 			usageMap[nodeName+"/"+sysContainer.Name] = usage
 		}
 	}
+	// process the nodes information
+	node_usage := &util.ContainerResourceUsage{
+		Name:                    nodeName,
+		Timestamp:               summary.Node.StartTime.Time,
+		CPUUsageInCores:         float64(removeUint64Ptr(summary.Node.CPU.UsageNanoCores)) / 1000000000,
+		MemoryUsageInBytes:      removeUint64Ptr(summary.Node.Memory.UsageBytes),
+		MemoryWorkingSetInBytes: removeUint64Ptr(summary.Node.Memory.WorkingSetBytes),
+		MemoryRSSInBytes:        removeUint64Ptr(summary.Node.Memory.RSSBytes),
+		CPUInterval:             0,
+	}
+	usageMap[nodeName+"/node"] = node_usage
 	return usageMap, nil
 }
 

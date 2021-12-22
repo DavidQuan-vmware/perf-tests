@@ -16,8 +16,13 @@ spec:
   {{if $PROMETHEUS_SCRAPE_ETCD}}
   - interval: 5s
     port: etcd-2379
-  - interval: 5s
-    port: etcd-2382
+    scheme: https                                                               
+    tlsConfig:                                                                  
+      certFile: /etc/prometheus/secrets/kube-etcd-client-certs/server.crt          
+      insecureSkipVerify: true                                                  
+      keyFile: /etc/prometheus/secrets/kube-etcd-client-certs/server.key
+  # - interval: 5s
+  #   port: etcd-2382
   {{end}}
   {{if $PROMETHEUS_SCRAPE_NODE_EXPORTER}}
   # TODO(mborsz): Debug why node-exporter is that slow and change interval back to 5s.
@@ -38,21 +43,25 @@ spec:
   - interval: 5s
     port: kubelet
     scheme: https
+    bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
     tlsConfig:
       insecureSkipVerify: true
   - interval: 5s
     port: kubelet
+    bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
     path: /metrics/cadvisor
     scheme: https
     tlsConfig:
       insecureSkipVerify: true
   - interval: 5s
     port: kube-scheduler
+    bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
     scheme: https
     tlsConfig:
       insecureSkipVerify: true
   - interval: 5s
     port: kube-controller-manager
+    bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
     scheme: https
     tlsConfig:
       insecureSkipVerify: true
