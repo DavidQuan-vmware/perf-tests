@@ -57,7 +57,7 @@ func GetOneTimeResourceUsageOnNode(c clientset.Interface, nodeName string, port 
 	}
 	// Process container infos that are relevant to us.
 	containers := containerNames()
-	usageMap := make(util.ResourceUsagePerContainer, len(containers)+len(summary.Node.SystemContainers)) + 1
+	usageMap := make(util.ResourceUsagePerContainer, len(containers)+len(summary.Node.SystemContainers) + 1)
 	for _, pod := range summary.Pods {
 		for _, container := range pod.Containers {
 			isInteresting := false
