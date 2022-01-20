@@ -2,11 +2,16 @@
 # - This test is designed for node-density testing. Please only label one worker node with mtyp=density
 
 #Constants
-{{$POD_COUNT := DefaultParam .POD_COUNT 250}}
+{{$POD_COUNT := DefaultParam .POD_COUNT 243}}
 {{$POD_THROUGHPUT := DefaultParam .POD_THROUGHPUT 5}}
 {{$CONTAINER_IMAGE := DefaultParam .CONTAINER_IMAGE "k8s.gcr.io/pause:3.1"}}
 {{$POD_STARTUP_LATENCY_THRESHOLD := DefaultParam .POD_STARTUP_LATENCY_THRESHOLD "5s"}}
 {{$OPERATION_TIMEOUT := DefaultParam .OPERATION_TIMEOUT "15m"}}
+{{$ENABLE_SYSTEM_POD_METRICS:= DefaultParam .ENABLE_SYSTEM_POD_METRICS true}}
+{{$ENABLE_CLUSTER_OOMS_TRACKER := DefaultParam .CL2_ENABLE_CLUSTER_OOMS_TRACKER true}}
+{{$CLUSTER_OOMS_IGNORED_PROCESSES := DefaultParam .CL2_CLUSTER_OOMS_IGNORED_PROCESSES ""}}
+{{$RESTART_COUNT_THRESHOLD_OVERRIDES:= DefaultParam .RESTART_COUNT_THRESHOLD_OVERRIDES ""}}
+{{$ENABLE_RESTART_COUNT_CHECK := DefaultParam .ENABLE_RESTART_COUNT_CHECK true}}
 
 name: pods-density
 namespace:
