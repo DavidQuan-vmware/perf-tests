@@ -21,7 +21,7 @@ spec:
         group: density
         name: {{.Name}}
     spec:
-      nodeSelector;
+      nodeSelector:
         mtype: density
       hostNetwork: {{$HostNetworkMode}}
       containers:
